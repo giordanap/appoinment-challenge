@@ -1,10 +1,22 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import middy from "@middy/core";
 import jsonParser from "@middy/http-json-body-parser";
+
 import { AppointmentService } from "../application/AppointmentService";
 import { DynamoAppointmentRepo } from "../infrastructure/dynamo/DynamoAppointmentRepo";
+import { SNSEventPublisher } from "../infrastructure/sns/SNSEventPublisher";
+import { SNSClient } from "@aws-sdk/client-sns";
 
-const service = new AppointmentService(new DynamoAppointmentRepo());
+const snsClient = new SNSClient({ region: "us-east-1" });
+const eventPublisher = new SNSEventPublisher(
+  snsClient,
+  process.env.SNS_TOPIC_ARN!
+);
+
+const service = new AppointmentService(
+  new DynamoAppointmentRepo(),
+  eventPublisher
+);
 
 export const createAppointment = middy(
   async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {

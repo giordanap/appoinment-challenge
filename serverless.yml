@@ -20,12 +20,18 @@ provider:
         - dynamodb:*
       Resource:
         - arn:aws:dynamodb:us-east-1:*:table/${self:service}-appointments
+    - Sid: AllowSNS
+      Effect: Allow
+      Action:
+        - sns:Publish
+      Resource: !Ref AppointmentsTopic
 
 functions:
   createAppointment:
     handler: dist/handlers/appointment.createAppointment
     environment:
       TABLE_NAME: ${self:service}-appointments
+      SNS_TOPIC_ARN: !Ref AppointmentsTopic
     events:
       - httpApi:
           path: /appointments
@@ -57,6 +63,39 @@ resources:
             KeyType: HASH
           - AttributeName: scheduleId
             KeyType: RANGE
+
+    AppointmentsTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ${self:service}-appointments-topic
+
+    SqsPeQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: SQS_PE
+
+    SqsClQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: SQS_CL
+
+    PeSubscription:
+      Type: AWS::SNS::Subscription
+      Properties:
+        Protocol: sqs
+        Endpoint: !GetAtt SqsPeQueue.Arn
+        TopicArn: !Ref AppointmentsTopic
+        FilterPolicy:
+          countryISO: ["PE"]
+
+    ClSubscription:
+      Type: AWS::SNS::Subscription
+      Properties:
+        Protocol: sqs
+        Endpoint: !GetAtt SqsClQueue.Arn
+        TopicArn: !Ref AppointmentsTopic
+        FilterPolicy:
+          countryISO: ["CL"]
 
 plugins:
   - serverless-offline

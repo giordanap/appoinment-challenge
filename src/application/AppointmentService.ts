@@ -1,8 +1,12 @@
 import { Appointment } from "../domain/models/Appointment";
 import { AppointmentRepo } from "../domain/ports/AppointmentRepo";
+import { EventPublisher } from "../domain/ports/EventPublisher";
 
 export class AppointmentService {
-  constructor(private repo: AppointmentRepo) {}
+  constructor(
+    private repo: AppointmentRepo,
+    private eventPublisher: EventPublisher
+  ) {}
 
   async create(
     payload: Omit<Appointment, "status" | "createdAt">
@@ -19,6 +23,8 @@ export class AppointmentService {
       createdAt: new Date().toISOString(),
     };
     await this.repo.save(appointment);
+    await this.eventPublisher.publish(appointment, payload.countryISO);
+
     return appointment;
   }
 
