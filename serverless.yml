@@ -1,0 +1,62 @@
+service: citas-challenge
+frameworkVersion: "3"
+
+package:
+  individually: true
+  patterns:
+    - dist/**
+    - node_modules/**
+    - package.json
+    - package-lock.json
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  iamRoleStatements:
+    - Sid: AllowDynamo
+      Effect: Allow
+      Action:
+        - dynamodb:*
+      Resource:
+        - arn:aws:dynamodb:us-east-1:*:table/${self:service}-appointments
+
+functions:
+  createAppointment:
+    handler: dist/handlers/appointment.createAppointment
+    environment:
+      TABLE_NAME: ${self:service}-appointments
+    events:
+      - httpApi:
+          path: /appointments
+          method: post
+
+  listAppointments:
+    handler: dist/handlers/appointment.listAppointments
+    environment:
+      TABLE_NAME: ${self:service}-appointments
+    events:
+      - httpApi:
+          path: /appointments/{insuredId}
+          method: get
+
+resources:
+  Resources:
+    AppointmentsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-appointments
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: insuredId
+            AttributeType: S
+          - AttributeName: scheduleId
+            AttributeType: N
+        KeySchema:
+          - AttributeName: insuredId
+            KeyType: HASH
+          - AttributeName: scheduleId
+            KeyType: RANGE
+
+plugins:
+  - serverless-offline
