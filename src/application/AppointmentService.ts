@@ -1,6 +1,7 @@
 import { Appointment } from "../domain/models/Appointment";
 import { AppointmentRepo } from "../domain/ports/AppointmentRepo";
 import { EventPublisher } from "../domain/ports/EventPublisher";
+import { AppError } from "../shared/errors";
 
 export class AppointmentService {
   constructor(
@@ -12,10 +13,13 @@ export class AppointmentService {
     payload: Omit<Appointment, "status" | "createdAt">
   ): Promise<Appointment> {
     if (!/^\d{5}$/.test(payload.insuredId)) {
-      throw new Error("insuredId inválido");
+      throw new AppError(400, "insuredId inválido");
     }
     if (!["PE", "CL"].includes(payload.countryISO)) {
-      throw new Error("countryISO debe ser PE o CL");
+      throw new AppError(400, "countryISO debe ser PE o CL");
+    }
+    if (isNaN(payload.scheduleId)) {
+      throw new AppError(400, "scheduleId inválido");
     }
     const appointment: Appointment = {
       ...payload,

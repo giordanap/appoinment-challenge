@@ -1,13 +1,7 @@
 service: citas-challenge
 frameworkVersion: "3"
 
-package:
-  individually: true
-  patterns:
-    - dist/**
-    - node_modules/**
-    - package.json
-    - package-lock.json
+useDotenv: true
 
 provider:
   name: aws
@@ -25,10 +19,13 @@ provider:
       Action:
         - sns:Publish
       Resource: !Ref AppointmentsTopic
+  environment:
+    TABLE_NAME: ${self:service}-appointments
+    SNS_TOPIC_ARN: !Ref AppointmentsTopic
 
 functions:
   createAppointment:
-    handler: dist/handlers/appointment.createAppointment
+    handler: src/handlers/appointment.createAppointment
     environment:
       TABLE_NAME: ${self:service}-appointments
       SNS_TOPIC_ARN: !Ref AppointmentsTopic
@@ -38,13 +35,43 @@ functions:
           method: post
 
   listAppointments:
-    handler: dist/handlers/appointment.listAppointments
+    handler: src/handlers/appointment.listAppointments
     environment:
       TABLE_NAME: ${self:service}-appointments
     events:
       - httpApi:
           path: /appointments/{insuredId}
           method: get
+
+  processPeAppointment:
+    handler: src/handlers/appointmentPe.handler
+    environment:
+      RDS_HOST: ${env:RDS_PE_HOST}
+      RDS_DATABASE: ${env:RDS_PE_DATABASE}
+      RDS_USER: ${env:RDS_PE_USER}
+      RDS_PASSWORD: ${env:RDS_PE_PASSWORD}
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - SqsPeQueue
+              - Arn
+          batchSize: 10
+
+  processClAppointment:
+    handler: src/handlers/appointmentCl.handler
+    environment:
+      RDS_HOST: ${env:RDS_CL_HOST}
+      RDS_DATABASE: ${env:RDS_CL_DATABASE}
+      RDS_USER: ${env:RDS_CL_USER}
+      RDS_PASSWORD: ${env:RDS_CL_PASSWORD}
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - SqsClQueue
+              - Arn
+          batchSize: 10
 
 resources:
   Resources:
@@ -98,4 +125,11 @@ resources:
           countryISO: ["CL"]
 
 plugins:
+  - serverless-webpack
+  - serverless-dotenv-plugin
   - serverless-offline
+
+custom:
+  webpack:
+    webpackConfig: ./webpack.config.js
+    includeModules: true

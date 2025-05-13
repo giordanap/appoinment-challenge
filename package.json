@@ -26,9 +26,13 @@
     "rimraf": "^3.0.2",
     "serverless": "^3.38.0",
     "serverless-offline": "^13.3.3",
+    "serverless-webpack": "^5.15.1",
     "ts-jest": "^29.1.2",
+    "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.3"
+    "typescript": "^5.4.3",
+    "webpack": "^5.99.7",
+    "webpack-cli": "^6.0.1"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.797.0",
@@ -42,6 +46,8 @@
     "axios": "^1.6.8",
     "dotenv": "^16.0.3",
     "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.14.1",
+    "serverless-dotenv-plugin": "^6.0.0",
     "serverless-http": "^3.2.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-dist": "^5.13.0",
